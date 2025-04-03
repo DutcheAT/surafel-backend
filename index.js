@@ -10,8 +10,7 @@ const port = process.env.PORT || 3000;
 
 const upload = multer();
 app.use(upload.none());
-app.use(express.static('../public'));
-app.use(cors({ origin: `http://localhost:${port}` }));
+app.use(cors({ origin: '*' })); // Allow all origins for now
 
 const EMAIL_USER = process.env.EMAIL_USER;
 const EMAIL_PASS = process.env.EMAIL_PASS;
@@ -21,15 +20,11 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
 let transporter = nodemailer.createTransport({
     service: 'gmail',
-    auth: {
-        user: EMAIL_USER,
-        pass: EMAIL_PASS,
-    },
+    auth: { user: EMAIL_USER, pass: EMAIL_PASS },
 });
 
 const bot = new Telegraf(TELEGRAM_BOT_TOKEN);
 
-// Log incoming requests for debugging
 app.use((req, res, next) => {
     console.log('Incoming request:', req.method, req.url, req.headers);
     console.log('Request body:', req.body);
@@ -60,19 +55,13 @@ app.post('/send-message', async (req, res) => {
             html: `<pre>${userMessage.replace(/\n/g, '<br>')}</pre>`,
         });
 
-        await bot.telegram.sendMessage(TELEGRAM_CHAT_ID, userMessage, {
-            parse_mode: 'HTML',
-        });
- 
+        await bot.telegram.sendMessage(TELEGRAM_CHAT_ID, userMessage, { parse_mode: 'HTML' });
+
         res.status(200).json({ success: true, message: 'Message sent successfully!' });
     } catch (error) {
         console.error('Error sending message:', error);
-        res.status(500).json({ success: false, message: 'Error sending message. Please try again later.' });
+        res.status(500).json({ success: false, message: 'Error sending message.' });
     }
-});
-
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/../public/index.html');
 });
 
 app.listen(port, () => {
